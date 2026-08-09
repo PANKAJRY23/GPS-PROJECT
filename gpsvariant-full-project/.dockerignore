@@ -1,0 +1,11 @@
+target/
+.git/
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+uploads/*
+.env
+.env.*
+!*.example
