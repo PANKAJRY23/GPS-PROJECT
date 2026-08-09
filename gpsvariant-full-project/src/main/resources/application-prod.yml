@@ -22,7 +22,7 @@ spring:
     password: ${MAIL_PASSWORD}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:8080}
 
   servlet:
     session:
