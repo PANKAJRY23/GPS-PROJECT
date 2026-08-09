@@ -1,0 +1,7 @@
+# Replace the hostname with the client's real domain.
+# Caddy will obtain and renew the HTTPS certificate automatically.
+# DNS for the hostname must point to this server.
+
+gpsvariant.example.com {
+    reverse_proxy app:8080
+}
