@@ -1,4 +1,3 @@
-```yaml
 spring:
   application:
     name: gpsvariant
@@ -75,4 +74,3 @@ logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
     com.gpsvariant: ${LOG_LEVEL_APP:INFO}
-```
