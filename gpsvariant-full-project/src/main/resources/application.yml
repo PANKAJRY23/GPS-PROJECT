@@ -2,20 +2,7 @@ spring:
   application:
     name: gpsvariant
 
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/gpsdb}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
-      minimum-idle: ${DB_POOL_MIN_IDLE:2}
-      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
-      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:5000}
-
   jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
     open-in-view: false
     show-sql: false
     properties:
@@ -28,10 +15,6 @@ spring:
       max-request-size: ${MAX_REQUEST_SIZE:20MB}
 
   mail:
-    host: ${MAIL_HOST:}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -41,13 +24,14 @@ spring:
             required: ${MAIL_SMTP_STARTTLS_REQUIRED:true}
 
 server:
-  port: ${SERVER_PORT:8080}
   forward-headers-strategy: framework
+
   error:
     include-message: never
     include-binding-errors: never
     include-stacktrace: never
     include-exception: false
+
   servlet:
     session:
       timeout: ${SESSION_TIMEOUT:30m}
@@ -58,20 +42,19 @@ server:
         name: GPSVARIANT_SESSION
 
 app:
-  upload-dir: ${UPLOAD_DIR:uploads}
-  base-url: ${APP_BASE_URL:http://localhost:8080}
   max-upload-bytes: ${MAX_UPLOAD_BYTES:10485760}
+
   password-reset:
     expiry-minutes: ${PASSWORD_RESET_EXPIRY_MINUTES:15}
     cleanup-ms: ${PASSWORD_RESET_CLEANUP_MS:3600000}
+
   mail:
     enabled: ${MAIL_ENABLED:false}
     from: ${MAIL_FROM:${MAIL_USERNAME:}}
 
-  security:
-    allowed-image-types: ${ALLOWED_IMAGE_TYPES:image/jpeg,image/png,image/webp}
+security:
+  allowed-image-types: ${ALLOWED_IMAGE_TYPES:image/jpeg,image/png,image/webp}
 
-# Google Static Maps API key must be supplied as an environment variable in production.
 google:
   maps:
     api-key: ${GOOGLE_MAPS_API_KEY:}
@@ -81,6 +64,7 @@ management:
     web:
       exposure:
         include: health,info
+
   endpoint:
     health:
       probes:
