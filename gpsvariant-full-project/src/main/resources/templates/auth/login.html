@@ -61,6 +61,7 @@
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
                     <input class="form-input" id="username" name="username" type="text"
+                           minlength="4" maxlength="50"
                            autocomplete="username" placeholder="Enter your username" required autofocus>
                 </div>
 
@@ -68,6 +69,7 @@
                     <label class="form-label" for="password">Password</label>
                     <div class="input-wrap">
                         <input class="form-input has-toggle" id="password" name="password" type="password"
+                               minlength="8" maxlength="72"
                                autocomplete="current-password" placeholder="Enter your password" required>
                         <button class="password-toggle" type="button" data-password-toggle="password"
                                 aria-label="Show password">Show</button>

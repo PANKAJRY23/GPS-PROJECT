@@ -170,11 +170,12 @@
 
         <div class="map-preview">
 
-			<img id="mapPreview"
-			     style="display:none;
-			            width:100%;
-			            height:100%;
-			            object-fit:cover;">
+            <img id="mapPreview"
+                 style="display:none;
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                        image-rendering:auto;">
                 <span id="mapPlaceholder">
 						MAP IMAGE
 
@@ -363,23 +364,30 @@ async function uploadMainImage(){
 
 async function generateMapPreview() {
 
-    const latitude = document.getElementById("latitude").value;
-    const longitude = document.getElementById("longitude").value;
-    const address1 = document.getElementById("address1").value;
-    const address2 = document.getElementById("address2").value;
+    const latitude = document.getElementById("latitude").value.trim();
+    const longitude = document.getElementById("longitude").value.trim();
+    const address1 = document.getElementById("address1").value.trim();
+    const address2 = document.getElementById("address2").value.trim();
 
     if (!uploadedImageId) {
         alert("Please upload the main image first.");
         return;
     }
 
-    if (!latitude || !longitude) {
-        alert("Please enter latitude & longitude");
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (!latitude || !Number.isFinite(lat) || lat < -90 || lat > 90) {
+        alert("Latitude is required and must be a number between -90 and 90.");
+        return;
+    }
+
+    if (!longitude || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+        alert("Longitude is required and must be a number between -180 and 180.");
         return;
     }
 
     try {
-
         const response = await fetch("/api/map/generate", {
             method: "POST",
             headers: {
@@ -395,259 +403,179 @@ async function generateMapPreview() {
             })
         });
 
-        console.log("Response Status:", response.status);
-
+        const responseText = await response.text();
         if (!response.ok) {
-            throw new Error("Map Generation Failed");
+            throw new Error(responseText || "Map Generation Failed");
         }
 
-        const result = await response.json();
+        const result = JSON.parse(responseText);
+        mapImagePath = result.mapImagePath || "";
 
-        console.log("Response JSON:", result);
-		
-		mapImagePath = result.mapImagePath;
-
-		console.log(
-		    "Generated Map Image Path:",
-		    mapImagePath
-		);
+        if (!mapImagePath) {
+            throw new Error("mapImagePath not received from backend.");
+        }
 
         const mapPreview = document.getElementById("mapPreview");
         const mapPlaceholder = document.getElementById("mapPlaceholder");
 
-        console.log("mapPreview:", mapPreview);
-        console.log("mapPlaceholder:", mapPlaceholder);
-
-        if (!mapPreview) {
-            throw new Error("mapPreview element not found.");
-        }
-
-        if (!result.mapImagePath) {
-            throw new Error("mapImagePath not received from backend.");
-        }
-
-        mapPreview.src = result.mapImagePath;
-
         mapPreview.onload = function () {
-            console.log("Map image loaded successfully.");
+            console.log("High-resolution map image loaded successfully.");
         };
 
         mapPreview.onerror = function () {
             console.error("Unable to load image: " + mapPreview.src);
         };
 
+        mapPreview.src = mapImagePath;
         mapPreview.style.display = "block";
 
         if (mapPlaceholder) {
             mapPlaceholder.style.display = "none";
         }
 
-        alert("Map Generated Successfully");
+        alert("High-quality map generated successfully");
 
     } catch (error) {
-
         console.error("Generate Map Error:", error);
-
         alert("Error: " + error.message);
     }
 }
 
-/*
--------------------------------------
-SAVE GPS DATA
--------------------------------------
-*/
-
 async function uploadSecondImage(){
 
-    const fileInput =
-        document.getElementById("mapImageInput");
-
-
-    const file =
-        fileInput.files[0];
-
+    const fileInput = document.getElementById("mapImageInput");
+    const file = fileInput.files[0];
 
     if(!file){
-
         alert("Please select image");
-
         return;
     }
 
+    if(!file.type || !file.type.startsWith("image/")){
+        alert("Please select a valid image file.");
+        return;
+    }
 
-    const formData =
-        new FormData();
-
-
-    formData.append(
-        "file",
-        file
-    );
-
+    const formData = new FormData();
+    formData.append("file", file);
 
     try{
-
-
-        const response =
-            await fetch("/api/image/upload",{
-
-                method:"POST",
-                headers: csrfHeaders(),
-                body:formData
-
-            });
-
+        const response = await fetch("/api/image/upload",{
+            method:"POST",
+            headers: csrfHeaders(),
+            body:formData
+        });
 
         if(!response.ok){
-
-            throw new Error(
-                "Upload Failed"
-            );
-
+            const message = await response.text();
+            throw new Error(message || "Upload Failed");
         }
 
+        const result = await response.json();
+        secondImageId = result.imageId;
+        secondImagePath = result.imagePath || "";
 
-        const result =
-            await response.json();
+        if(!secondImageId){
+            throw new Error("Second image ID was not returned by the server.");
+        }
 
+        alert("Second Image Uploaded Successfully");
 
-			secondImageId =
-			    result.imageId;
-
-
-			secondImagePath =
-			    result.imagePath;
-
-
-			console.log(
-			    "Second Image ID:",
-			    secondImageId
-			);
-
-
-        console.log(
-            "Second Image Path:",
-            secondImagePath
-        );
-
-
-        alert(
-            "Second Image Uploaded Successfully"
-        );
-
-
-    }
-    catch(error){
-
+    } catch(error){
         console.error(error);
-
-        alert(
-            "Error Uploading Second Image"
-        );
-
+        secondImageId = null;
+        secondImagePath = "";
+        alert("Error Uploading Second Image: " + error.message);
     }
-
 }
 
 async function saveGpsData(){
-	
-	if(!uploadedImageId){
 
-	      alert(
-	          "Image ID missing. Please upload main image again."
-	      );
-
-	      return;
-
-	  }
-
-    const latitude =
-        document.getElementById("latitude").value;
-
-    const longitude =
-        document.getElementById("longitude").value;
-
-    const location =
-        document.getElementById("location").value;
-
-    const address1 =
-        document.getElementById("address1").value;
-
-    const address2 =
-        document.getElementById("address2").value;
-
-    const dateTime =
-        document.getElementById("dateTime").value;
-
-		const payload = {
-
-
-		    mainImageId: uploadedImageId,
-
-
-		    secondImageId: secondImageId,
-
-
-		    mapImagePath: mapImagePath,
-
-
-		    latitude: latitude,
-
-
-		    longitude: longitude,
-
-
-		    address1: address1,
-
-
-		    address2: address2,
-
-
-		    location: location,
-
-
-		    dateTime: dateTime
-
-		};
-		
-    try{
-
-        const response =
-            await fetch("/api/map/save",{
-
-                method:"POST",
-
-                headers:{
-                    "Content-Type":"application/json",
-                    ...csrfHeaders()
-                },
-
-                body: JSON.stringify(payload)
-
-            });
-
-        if(!response.ok){
-
-            throw new Error("Save Failed");
-
-        }
-
-        const result =
-            await response.text();
-
-        console.log(result);
-
-        alert("GPS Data Saved Successfully");
-
-    }catch(error){
-
-        console.error(error);
-
-        alert("Error Saving Data");
-
+    if(!uploadedImageId){
+        alert("Please upload the main image first.");
+        return;
     }
 
+    if(!secondImageId){
+        alert("Please upload the second image first.");
+        return;
+    }
+
+    if(uploadedImageId === secondImageId){
+        alert("Main and second images must be different.");
+        return;
+    }
+
+    if(!mapImagePath){
+        alert("Please generate the map before saving.");
+        return;
+    }
+
+    const latitude = document.getElementById("latitude").value.trim();
+    const longitude = document.getElementById("longitude").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const address1 = document.getElementById("address1").value.trim();
+    const address2 = document.getElementById("address2").value.trim();
+    const dateTime = document.getElementById("dateTime").value.trim();
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if(!latitude || !Number.isFinite(lat) || lat < -90 || lat > 90){
+        alert("Latitude is required and must be a number between -90 and 90.");
+        return;
+    }
+
+    if(!longitude || !Number.isFinite(lng) || lng < -180 || lng > 180){
+        alert("Longitude is required and must be a number between -180 and 180.");
+        return;
+    }
+
+    const payload = {
+        mainImageId: uploadedImageId,
+        secondImageId: secondImageId,
+        mapImagePath: mapImagePath,
+        latitude: latitude,
+        longitude: longitude,
+        address1: address1,
+        address2: address2,
+        location: location,
+        dateTime: dateTime
+    };
+
+    const saveButton = document.querySelector(".save-btn");
+    const originalText = saveButton.textContent;
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+
+    try{
+        const response = await fetch("/api/map/save",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                ...csrfHeaders()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const responseText = await response.text();
+
+        if(!response.ok){
+            throw new Error(responseText || "Save Failed");
+        }
+
+        console.log("Final save response:", responseText);
+        alert("GPS Data Saved Successfully");
+
+        // Refresh only after the backend confirms that gps_final_data was saved.
+        window.location.reload();
+
+    }catch(error){
+        console.error("Save GPS Data Error:", error);
+        alert("Error Saving Data: " + error.message);
+        saveButton.disabled = false;
+        saveButton.textContent = originalText;
+    }
 }
 
 </script>
