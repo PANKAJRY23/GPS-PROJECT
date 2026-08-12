@@ -35,3 +35,14 @@
 - Removed Spring Boot DevTools from the production dependency set.
 - Added Dockerfile and production Docker Compose.
 - Existing uploaded images are intentionally not bundled into the production source package; deploy them separately if they are real client data.
+
+## Final validation + high-resolution Google Maps update (August 2026)
+
+- Added browser-side validation for username, email, password and confirmation fields while retaining server-side Jakarta validation.
+- Added final-save GPS validation on the backend for latitude and longitude ranges.
+- Added required-image/map checks and protection against using the same image as both main and second image.
+- Final Save refreshes the dashboard only after the backend successfully persists `gps_final_data`.
+- Increased Google Static Maps generation from `600x400` to `640x640` with `scale=2`, returning a 1280x1280 high-resolution map image.
+- Increased map overlay size and enabled high-quality bicubic rendering when compositing the map onto the uploaded image.
+- Final GPS image remains PNG so map labels and text are not additionally degraded by JPEG compression.
+- The Google Maps API key remains environment-driven through `GOOGLE_MAPS_API_KEY`; no credential is added to source.

@@ -44,6 +44,7 @@ public class MapController {
             Authentication authentication) throws Exception {
 
         User user = currentUser(authentication);
+
         Long imageId = requiredLong(payload, "imageId");
         String latitude = requiredString(payload, "latitude");
         String longitude = requiredString(payload, "longitude");
@@ -79,6 +80,9 @@ public class MapController {
 
         User user = currentUser(authentication);
 
+        if (request == null) {
+            throw new IllegalArgumentException("Save request is required");
+        }
         if (request.getMainImageId() == null) {
             throw new IllegalArgumentException("Main image ID is required");
         }
@@ -92,6 +96,14 @@ public class MapController {
             throw new IllegalArgumentException("Map image is required");
         }
 
+        String latitude = requiredString(request.getLatitude(), "latitude");
+        String longitude = requiredString(request.getLongitude(), "longitude");
+
+        // Final server-side validation. Browser validation must never be the
+        // only validation protecting a production API.
+        double lat = parseLatitude(latitude);
+        double lng = parseLongitude(longitude);
+
         GpsImage mainImage = imageRepository.findByIdAndUserId(
                         request.getMainImageId(), user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Main image not found"));
@@ -104,11 +116,11 @@ public class MapController {
         finalData.setUser(user);
         finalData.setMainImage(mainImage);
         finalData.setSecondImage(secondImage);
-        finalData.setMapImagePath(request.getMapImagePath());
-        finalData.setLatitude(request.getLatitude());
-        finalData.setLongitude(request.getLongitude());
-        finalData.setAddress1(request.getAddress1());
-        finalData.setAddress2(request.getAddress2());
+        finalData.setMapImagePath(request.getMapImagePath().trim());
+        finalData.setLatitude(Double.toString(lat));
+        finalData.setLongitude(Double.toString(lng));
+        finalData.setAddress1(stringValue(request.getAddress1()));
+        finalData.setAddress2(stringValue(request.getAddress2()));
         finalData.setCreatedOn(LocalDateTime.now());
 
         gpsFinalDataRepository.save(finalData);
@@ -140,11 +152,15 @@ public class MapController {
     }
 
     private String requiredString(Map<String, Object> payload, String name) {
-        String value = stringValue(payload.get(name));
-        if (value.isBlank()) {
+        return requiredString(stringValue(payload.get(name)), name);
+    }
+
+    private String requiredString(String value, String name) {
+        String normalized = stringValue(value);
+        if (normalized.isBlank()) {
             throw new IllegalArgumentException(name + " is required");
         }
-        return value;
+        return normalized;
     }
 
     private String stringValue(Object value) {
@@ -153,8 +169,10 @@ public class MapController {
 
     private double parseLatitude(String value) {
         try {
-            double parsed = Double.parseDouble(value);
-            if (parsed < -90 || parsed > 90) throw new NumberFormatException();
+            double parsed = Double.parseDouble(value.trim());
+            if (!Double.isFinite(parsed) || parsed < -90 || parsed > 90) {
+                throw new NumberFormatException();
+            }
             return parsed;
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("Latitude must be a number between -90 and 90");
@@ -163,8 +181,10 @@ public class MapController {
 
     private double parseLongitude(String value) {
         try {
-            double parsed = Double.parseDouble(value);
-            if (parsed < -180 || parsed > 180) throw new NumberFormatException();
+            double parsed = Double.parseDouble(value.trim());
+            if (!Double.isFinite(parsed) || parsed < -180 || parsed > 180) {
+                throw new NumberFormatException();
+            }
             return parsed;
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("Longitude must be a number between -180 and 180");
